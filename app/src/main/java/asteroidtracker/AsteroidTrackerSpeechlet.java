@@ -51,52 +51,6 @@ import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-/**
- * This sample shows how to create a Lambda function for handling Alexa Skill requests that:
- * 
- * <ul>
- * <li><b>Web service</b>: communicate with an external web service to get events for specified days
- * in history (Wikipedia API)</li>
- * <li><b>Pagination</b>: after obtaining a list of events, read a small subset of events and wait
- * for user prompt to read the next subset of events by maintaining session state</li>
- * <p>
- * <li><b>Dialog and Session state</b>: Handles two models, both a one-shot ask and tell model, and
- * a multi-turn dialog model</li>
- * <li><b>SSML</b>: Using SSML tags to control how Alexa renders the text-to-speech</li>
- * </ul>
- * <p>
- * <h2>Examples</h2>
- * <p>
- * <b>One-shot model</b>
- * <p>
- * User: "Alexa, ask History Buff what happened on August thirtieth."
- * <p>
- * Alexa: "For August thirtieth, in 2003, [...] . Wanna go deeper in history?"
- * <p>
- * User: "No."
- * <p>
- * Alexa: "Good bye!"
- * <p>
- * 
- * <b>Dialog model</b>
- * <p>
- * User: "Alexa, open History Buff"
- * <p>
- * Alexa: "History Buff. What day do you want events for?"
- * <p>
- * User: "August thirtieth."
- * <p>
- * Alexa: "For August thirtieth, in 2003, [...] . Wanna go deeper in history?"
- * <p>
- * User: "Yes."
- * <p>
- * Alexa: "In 1995, Bosnian war [...] . Wanna go deeper in history?"
- * <p>
- * User: "No."
- * <p>
- * Alexa: "Good bye!"
- * <p>
- */
 public class AsteroidTrackerSpeechlet implements Speechlet {
     private static final Logger log = LoggerFactory.getLogger(AsteroidTrackerSpeechlet.class);
 
@@ -110,7 +64,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
     /**
      * Constant defining number of events to be read at one time.
      */
-    private static final int PAGINATION_SIZE = 3;
+    private static final int PAGINATION_SIZE = 1;
 
     /**
      * Length of the delimiter between individual events.
@@ -381,14 +335,13 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
                 index++;
             }
             if (index < events.size()) {
-                speechOutputBuilder.append(" Wanna go deeper in history?");
-                cardOutputBuilder.append(" Wanna go deeper in history?");
+                speechOutputBuilder.append(" Want more events?");
+                cardOutputBuilder.append(" Want more events?");
             }
             session.setAttribute(SESSION_INDEX, index);
             speechOutput = speechOutputBuilder.toString();
             cardOutput = cardOutputBuilder.toString();
         }
-        String repromptText = "Do you want to know more about what happened on this date?";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
@@ -401,7 +354,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
     }
 
     /**
-     * Download JSON-formatted list of events from Wikipedia, for a defined day/date, and return a
+     * Download JSON-formatted list of events from NeoWs API, for a defined day/date, and return a
      * String array of the events, with each event representing an element in the array.
      * 
      * @param month
