@@ -44,6 +44,13 @@ import com.amazon.speech.ui.SsmlOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 /**
  * This sample shows how to create a Lambda function for handling Alexa Skill requests that:
  * 
@@ -96,7 +103,9 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
     /**
      * URL prefix to download history content from Wikipedia.
      */
-    private static final String URL_PREFIX = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts" + "&format=json&explaintext=&exsectionformat=plain&redirects=&titles=";
+    private static final String URL_PREFIX = "https://api.nasa.gov/neo/rest/v1/feed?end_date=";
+
+    private static final String URL_POSTFIX = "&detailed=false&api_key=DEMO_KEY";
 
     /**
      * Constant defining number of events to be read at one time.
@@ -146,6 +155,9 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             "December"
     };
 
+    private static final String INFORMATION_TEXT = "With Asteroid Tracker, you can get near earth object events for any day of the year."
+            + " For example, you could say today, or July fourth."
+            + " So, which day do you want?";
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
             throws SpeechletException {
@@ -182,16 +194,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         }
         
          else if ("AMAZON.HelpIntent".equals(intentName)) {
-            // Create the plain text output.
-            String speechOutput =
-                    "With History Buff, you can get"
-                            + " historical events for any day of the year."
-                            + " For example, you could say today,"
-                            + " or August thirtieth, or you can say exit. Now, which day do you want?";
-
-            String repromptText = "Which day do you want?";
-
-            return newAskResponse(speechOutput, false, repromptText, false);
+            return newAskResponse(INFORMATION_TEXT, false, INFORMATION_TEXT, false);
         }
         
          else if ("AMAZON.StopIntent".equals(intentName)) {
@@ -228,15 +231,9 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      * @return SpeechletResponse object with voice/card response to return to the user
      */
     private SpeechletResponse getWelcomeResponse() {
-        String speechOutput = "History buff. What day do you want events for?";
-        // If the user either does not reply to the welcome message or says something that is not
-        // understood, they will be prompted again with this text.
-        String repromptText =
-                "With History Buff, you can get historical events for any day of the year. "
-                        + " For example, you could say today, or August thirtieth."
-                        + " Now, which day do you want?";
+        String speechOutput = "Welcome to Asteroid Tracker. What day do you want events for?";
 
-        return newAskResponse(speechOutput, false, repromptText, false);
+        return newAskResponse(speechOutput, false, INFORMATION_TEXT, false);
     }
 
     /**
@@ -269,7 +266,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
 
     private String buildSpeechOutputMarkup(String output)
     {
-        return "<speak>" + output + "</speak>"
+        return "<speak>" + output + "</speak>";
     }
 
     /**
@@ -285,6 +282,9 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      */
     private SpeechletResponse handleFirstEventRequest(Intent intent, Session session) {
         Calendar calendar = getCalendar(intent);
+
+        Date datetime = calendar.getTime();
+
         String month = MONTH_NAMES[calendar.get(Calendar.MONTH)];
         String date = Integer.toString(calendar.get(Calendar.DATE));
 
@@ -292,7 +292,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         String cardPrefixContent = "For " + month + " " + date + ", ";
         String cardTitle = "Asteroids on " + month + " " + date;
 
-        ArrayList<String> events = getAsteroidInfo(month, date);
+        ArrayList<String> events = getAsteroidInfo(new SimpleDateFormat("yyyy-MM-dd").format(datetime));
         String speechOutput = "";
         if (events.isEmpty()) 
         {
@@ -328,11 +328,6 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             cardOutputBuilder.append(" Wanna go deeper in history?");
             speechOutput = speechOutputBuilder.toString();
 
-            String repromptText =
-                    "With Asteroid Tracker, you can get near earth object events for any day of the year."
-                            + " For example, you could say today, or August thirtieth."
-                            + " Now, which day do you want?";
-
             // Create the Simple card content.
             SimpleCard card = new SimpleCard();
             card.setTitle(cardTitle);
@@ -343,7 +338,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             session.setAttribute(SESSION_INDEX, PAGINATION_SIZE);
             session.setAttribute(SESSION_TEXT, events);
 
-            SpeechletResponse response = newAskResponse(buildSpeechOutputMarkup(speechOutput), true, repromptText, false);
+            SpeechletResponse response = newAskResponse(buildSpeechOutputMarkup(speechOutput), true, INFORMATION_TEXT, false);
             response.setCard(card);
             return response;
         }
@@ -367,14 +362,13 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         String speechOutput = "";
         String cardOutput = "";
         if (events == null) {
-            speechOutput =
-                    "With History Buff, you can get historical events for any day of the year."
-                            + " For example, you could say today, or August thirtieth."
-                            + " Now, which day do you want?";
+            speechOutput = INFORMATION_TEXT;
+
+
         } else if (index >= events.size()) {
             speechOutput =
                     "There are no more events for this date. Try another date by saying, "
-                            + " get events for august thirtieth.";
+                            + " get events for February third.";
         } else {
             StringBuilder speechOutputBuilder = new StringBuilder();
             StringBuilder cardOutputBuilder = new StringBuilder();
@@ -401,7 +395,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         card.setTitle(cardTitle);
         card.setContent(cardOutput.toString());
 
-        SpeechletResponse response = newAskResponse("<speak>" + speechOutput + "</speak>", true, repromptText, false);
+        SpeechletResponse response = newAskResponse(buildSpeechOutputMarkup(speechOutput), true, INFORMATION_TEXT, false);
         response.setCard(card);
         return response;
     }
@@ -416,14 +410,14 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      *            the date to get events for, example: 7
      * @return String array of events for that date, 1 event per element of the array
      */
-    private ArrayList<String> getAsteroidInfo(String month, String date) 
+    private ArrayList<String> getAsteroidInfo(String date)
     {
         InputStreamReader inputStream = null;
         BufferedReader bufferedReader = null;
         String text = "";
         try {
             String line;
-            URL url = new URL(URL_PREFIX + month + "_" + date);
+            URL url = new URL(URL_PREFIX + date + URL_POSTFIX);
             inputStream = new InputStreamReader(url.openStream(), Charset.forName("US-ASCII"));
             bufferedReader = new BufferedReader(inputStream);
             StringBuilder builder = new StringBuilder();
@@ -451,41 +445,64 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      * @return String array of events for that date, 1 event per element of the array
      */
     private ArrayList<String> parseJson(String text) {
-        // sizeOf (\nEvents\n) is 10
-        text =
-                text.substring(text.indexOf("\\nEvents\\n") + SIZE_OF_EVENTS,
-                        text.indexOf("\\n\\n\\nBirths"));
         ArrayList<String> events = new ArrayList<String>();
+
         if (text.isEmpty()) {
             return events;
         }
-        int startIndex = 0, endIndex = 0;
-        while (endIndex != -1) {
-            endIndex = text.indexOf("\\n", startIndex + DELIMITER_SIZE);
-            String eventText =
-                    (endIndex == -1 ? text.substring(startIndex) : text.substring(startIndex,
-                            endIndex));
-            // replace dashes returned in text from Wikipedia's API
-            Pattern pattern = Pattern.compile("\\\\u2013\\s*");
-            Matcher matcher = pattern.matcher(eventText);
-            eventText = matcher.replaceAll("");
-            // add comma after year so Alexa pauses before continuing with the sentence
-            pattern = Pattern.compile("(^\\d+)");
-            matcher = pattern.matcher(eventText);
-            if (matcher.find()) {
-                eventText = matcher.replaceFirst(matcher.group(1) + ",");
+        JsonParser parser = new JsonParser();
+        JsonObject object = parser.parse(text).getAsJsonObject();
+
+        LocalDate date = LocalDate.now();
+        String dateText = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        JsonArray asteroidArray = object.get("near_earth_objects").getAsJsonObject().get(dateText).getAsJsonArray();
+
+        for (int i = 0; i < object.get("element_count").getAsInt(); i++) {
+            JsonObject thisAsteroid = asteroidArray.get(i).getAsJsonObject();
+
+            String asteroidName = thisAsteroid.get("name").getAsString();
+
+            float absoluteMagnitude = thisAsteroid.get("absolute_magnitude_h").getAsFloat();
+
+            JsonObject estimatedDiameterKilometers = thisAsteroid.get("estimated_diameter").getAsJsonObject().get("kilometers").getAsJsonObject();
+            float minimumDiameter = estimatedDiameterKilometers.get("estimated_diameter_min").getAsFloat();
+            float maximumDiameter = estimatedDiameterKilometers.get("estimated_diameter_max").getAsFloat();
+
+            boolean isDangerousObject = thisAsteroid.get("is_potentially_hazardous_asteroid").getAsString() == "false";
+
+            JsonObject closeApproachData= thisAsteroid.get("close_approach_data").getAsJsonArray().get(0).getAsJsonObject();
+            float speed = closeApproachData.get("relative_velocity").getAsJsonObject().get("kilometers_per_hour").getAsFloat();
+            Number missDistance = closeApproachData.get("miss_distance").getAsJsonObject().get("kilometers").getAsNumber();
+            String orbitingBody = closeApproachData.get("orbiting_body").getAsString();
+
+            DecimalFormat df = new DecimalFormat("#.##");
+
+            String asteroidIdText = "Asteroid " + i + " name is "  + asteroidName + ".";
+            String magnitudeText = "The absolute magnitude is " + absoluteMagnitude;
+            String sizeText = ", the estimated diameter is from " + df.format(minimumDiameter) + " to " + df.format(maximumDiameter) + " kilometers.";
+
+            String dangerousnessText;
+            if (isDangerousObject) {
+                dangerousnessText = "This object is dangerous!";
+            } else {
+                dangerousnessText = "This object is not dangerous.";
             }
-            eventText = "In " + eventText;
-            startIndex = endIndex + 2;
+
+            String speedText = "It is traveling at " + df.format(speed) + " kilometers per hour";
+            String distanceText = " at a distance of " + missDistance + " kilometers";
+            String orbitingBodyText = " and is orbiting " + orbitingBody;
+
+            String eventText = asteroidIdText + magnitudeText + sizeText + dangerousnessText + speedText + distanceText + orbitingBodyText;
             events.add(eventText);
         }
-        Collections.reverse(events);
+
         return events;
     }
 
     /**
      * Wrapper for creating the Ask response from the input strings.
-     * 
+     *
      * @param stringOutput
      *            the output to be spoken
      * @param isOutputSsml
@@ -518,5 +535,4 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         reprompt.setOutputSpeech(repromptOutputSpeech);
         return SpeechletResponse.newAskResponse(outputSpeech, reprompt);
     }
-
 }

@@ -1,11 +1,13 @@
+import org.apache.commons.lang3.JavaVersion
+
 apply plugin: 'java'
 
 group = "alexa-asteroid-tracker"
 version = '1.0'
 
 compileJava {
-    targetCompatibility = JavaVersion.VERSION_1_8
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.JAVA_1_8
+    sourceCompatibility = JavaVersion.JAVA_1_8
 }
 
 jar {
