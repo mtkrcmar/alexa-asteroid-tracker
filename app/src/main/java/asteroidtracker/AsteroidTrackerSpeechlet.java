@@ -478,15 +478,15 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
 
             DecimalFormat df = new DecimalFormat("#.##");
 
-            String asteroidIdText = "Asteroid " + i + " name is "  + asteroidName + ".";
+            String asteroidIdText = "Asteroid " + i + ", name is "  + asteroidName + ",";
             String magnitudeText = "The absolute magnitude is " + absoluteMagnitude;
-            String sizeText = ", the estimated diameter is from " + df.format(minimumDiameter) + " to " + df.format(maximumDiameter) + " kilometers.";
+            String sizeText = ", the estimated diameter is from " + df.format(minimumDiameter) + " to " + df.format(maximumDiameter) + " kilometers,";
 
             String dangerousnessText;
             if (isDangerousObject) {
                 dangerousnessText = "This object is dangerous!";
             } else {
-                dangerousnessText = "This object is not dangerous.";
+                dangerousnessText = "This object is not dangerous,";
             }
 
             String speedText = "It is traveling at " + df.format(speed) + " kilometers per hour";
