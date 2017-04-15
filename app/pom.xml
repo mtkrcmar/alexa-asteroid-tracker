@@ -4,7 +4,7 @@
   <groupId>alexa-asteroid-tracker</groupId>
   <artifactId>alexa-asteroid-tracker</artifactId>
   <packaging>jar</packaging>
-  <version>1.1</version>
+  <version>1.2</version>
   <name>NeoWs Asteroid Tracker for Alexa</name>
   <url>http://developer.amazon.com/ask</url>
 

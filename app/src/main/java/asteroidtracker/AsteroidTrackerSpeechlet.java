@@ -57,8 +57,9 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
     /**
      * URL prefix to download history content from Wikipedia.
      */
-    private static final String URL_PREFIX = "https://api.nasa.gov/neo/rest/v1/feed?end_date=";
-
+    private static final String URL_PREFIX = "https://api.nasa.gov/neo/rest/v1/feed?";
+    private static final String URL_START_DATE = "start_date=";
+    private static final String URL_END_DATE = "&end_date=";
     private static final String URL_POSTFIX = "&detailed=false&api_key=DEMO_KEY";
 
     /**
@@ -370,7 +371,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         String text = "";
         try {
             String line;
-            URL url = new URL(URL_PREFIX + date + URL_POSTFIX);
+            URL url = new URL(URL_PREFIX + URL_START_DATE + date + URL_END_DATE + date + URL_POSTFIX);
             inputStream = new InputStreamReader(url.openStream(), Charset.forName("US-ASCII"));
             bufferedReader = new BufferedReader(inputStream);
             StringBuilder builder = new StringBuilder();
@@ -385,7 +386,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             IOUtils.closeQuietly(inputStream);
             IOUtils.closeQuietly(bufferedReader);
         }
-        return parseJson(text);
+        return parseJson(text, date);
     }
 
     /**
@@ -397,7 +398,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      *            the JSON formatted list of events/births/deaths for a certain date
      * @return String array of events for that date, 1 event per element of the array
      */
-    private ArrayList<String> parseJson(String text) {
+    private ArrayList<String> parseJson(String text, String date) {
         ArrayList<String> events = new ArrayList<String>();
 
         if (text.isEmpty()) {
@@ -406,10 +407,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         JsonParser parser = new JsonParser();
         JsonObject object = parser.parse(text).getAsJsonObject();
 
-        LocalDate date = LocalDate.now();
-        String dateText = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
-
-        JsonArray asteroidArray = object.get("near_earth_objects").getAsJsonObject().get(dateText).getAsJsonArray();
+        JsonArray asteroidArray = object.get("near_earth_objects").getAsJsonObject().get(date).getAsJsonArray();
 
         for (int i = 0; i < object.get("element_count").getAsInt(); i++) {
             JsonObject thisAsteroid = asteroidArray.get(i).getAsJsonObject();
