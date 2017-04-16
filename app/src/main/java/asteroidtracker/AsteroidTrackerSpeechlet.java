@@ -279,8 +279,8 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
                 }
         }
           
-            speechOutputBuilder.append(" Wanna go deeper in history?");
-            cardOutputBuilder.append(" Wanna go deeper in history?");
+            speechOutputBuilder.append(" Want more asteroid information?");
+            cardOutputBuilder.append(" Want more asteroid information?");
             speechOutput = speechOutputBuilder.toString();
 
             // Create the Simple card content.
@@ -288,7 +288,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             card.setTitle(cardTitle);
             card.setContent(cardOutputBuilder.toString());
 
-            // After reading the first 3 events, set the count to 3 and add the events
+            // After reading the first event, set the count to 1 and add the events
             // to the session attributes
             session.setAttribute(SESSION_INDEX, PAGINATION_SIZE);
             session.setAttribute(SESSION_TEXT, events);
