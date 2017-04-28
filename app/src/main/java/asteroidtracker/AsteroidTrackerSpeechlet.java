@@ -111,7 +111,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
     };
 
     private static final String INFORMATION_TEXT = "With Asteroid Tracker, you can get near earth object events for any day of the year."
-            + " For example, you could say today, or July fourth."
+            + " For example, you could say give me events for today, or give events for July fourth, 2015."
             + " So, which day do you want?";
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -142,13 +142,13 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
 
         if ("GetFirstEventIntent".equals(intentName)) {
             return handleFirstEventRequest(intent, session);
-        } 
-        
-        else if ("GetNextEventIntent".equals(intentName)) {
+        }
+
+        else if ("AMAZON.YesIntent".equals(intentName)) {
             return handleNextEventRequest(session);
         }
-        
-         else if ("AMAZON.HelpIntent".equals(intentName)) {
+
+        else if ("AMAZON.HelpIntent".equals(intentName)) {
             return newAskResponse(INFORMATION_TEXT, false, INFORMATION_TEXT, false);
         }
         
@@ -210,14 +210,17 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             try {
                 date = dateFormat.parse(daySlot.getValue());
             } catch (ParseException e) {
-                date = new Date();
+                return null;
             }
-        } else {
-            date = new Date();
-        }
         calendar.setTime(date);
         return calendar;
+
+        } else {
+            return null;
+        }
+
     }
+
 
     private String buildSpeechOutputMarkup(String output)
     {
@@ -237,19 +240,32 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      */
     private SpeechletResponse handleFirstEventRequest(Intent intent, Session session) {
         Calendar calendar = getCalendar(intent);
+        String speechOutput;
+
+        if(calendar == null)
+        {
+            speechOutput = "Invalid date, please try again. For example, you could say give me events for today, or give events for July fourth, 2015.";
+
+            // Create the plain text output
+            SsmlOutputSpeech outputSpeech = new SsmlOutputSpeech();
+            outputSpeech.setSsml(buildSpeechOutputMarkup(speechOutput));
+
+            return SpeechletResponse.newTellResponse(outputSpeech);
+        }
 
         Date datetime = calendar.getTime();
 
         String month = MONTH_NAMES[calendar.get(Calendar.MONTH)];
         String date = Integer.toString(calendar.get(Calendar.DATE));
+        String year = Integer.toString(calendar.get(Calendar.YEAR));
 
-        String speechPrefixContent = "<p>For " + month + " " + date + "</p> ";
-        String cardPrefixContent = "For " + month + " " + date + ", ";
-        String cardTitle = "Asteroids on " + month + " " + date;
+        String speechPrefixContent = "<p>For " + month + " " + date + ", " + year + "</p> ";
+        String cardPrefixContent = "For " + month + " " + date + ", "+ year + ", ";
+        String cardTitle = "Asteroids on " + month + " " + date+ ", " + year + ", ";
 
         ArrayList<String> events = getAsteroidInfo(new SimpleDateFormat("yyyy-MM-dd").format(datetime));
-        String speechOutput = "";
-        if (events.isEmpty()) 
+
+        if (events.isEmpty())
         {
             speechOutput = "There is a problem connecting to the NASA A.P.I at this time."
                             + " Please try again later.";
@@ -311,7 +327,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
      * @return SpeechletResponse object with voice/card response to return to the user
      */
     private SpeechletResponse handleNextEventRequest(Session session) {
-        String cardTitle = "More events on this day in history";
+        String cardTitle = "More asteroid events on this day";
         ArrayList<String> events = (ArrayList<String>) session.getAttribute(SESSION_TEXT);
         int index = (Integer) session.getAttribute(SESSION_INDEX);
         String speechOutput = "";
@@ -323,7 +339,7 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
         } else if (index >= events.size()) {
             speechOutput =
                     "There are no more events for this date. Try another date by saying, "
-                            + " get events for February third.";
+                            + " get events for February third, 2014.";
         } else {
             StringBuilder speechOutputBuilder = new StringBuilder();
             StringBuilder cardOutputBuilder = new StringBuilder();
@@ -338,6 +354,11 @@ public class AsteroidTrackerSpeechlet implements Speechlet {
             if (index < events.size()) {
                 speechOutputBuilder.append(" Want more events?");
                 cardOutputBuilder.append(" Want more events?");
+            }
+
+            else {
+                speechOutputBuilder.append(" There are no more events for today, would you like to get events for another day?");
+                cardOutputBuilder.append(" There are no more events for today, would you like to get events for another day?");
             }
             session.setAttribute(SESSION_INDEX, index);
             speechOutput = speechOutputBuilder.toString();
